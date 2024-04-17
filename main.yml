@@ -1,0 +1,32 @@
+name: Cowsay image build and push to registery
+
+on:
+  push:
+    branches:
+      - main
+      
+env:
+    IMAGE_NAME: wisecow
+
+jobs:
+  build-and-run-container:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Setting environment variables
+        run: |
+          COMMIT_HASH=${{ github.sha }}
+          LAST_7_DIGITS=$(echo $COMMIT_HASH | cut -c 1-7)
+          echo "LAST_7_DIGITS=$LAST_7_DIGITS" >> $GITHUB_ENV
+      - name: Building the wisecow image
+        run: |
+          ls -altr
+          docker build -t ${IMAGE_NAME}:${LAST_7_DIGITS} .
+      - name: Login to Docker Hub
+        run: docker login --username ${{ secrets.DOCKER_USER }} --password ${{ secrets.DOCKER_PASSWORD }}
+      - name: Pushing it to the docker registry
+        run: |
+          docker tag ${IMAGE_NAME}:${LAST_7_DIGITS} ${{ secrets.DOCKER_USER }}/${IMAGE_NAME}:${LAST_7_DIGITS}
+          docker push ${{ secrets.DOCKER_USER }}/${IMAGE_NAME}:${LAST_7_DIGITS}
+          
